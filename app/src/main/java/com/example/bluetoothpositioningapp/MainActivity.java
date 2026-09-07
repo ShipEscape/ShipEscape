@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
             "4c:dd:02:00:00:01"
     };
 
-    // 信标物理坐标 单位米
+    // 信标物理坐标 单位米 lell
     private final double[][] BEACON_POSITIONS = {
             {0, 0},
             {10, 0},
