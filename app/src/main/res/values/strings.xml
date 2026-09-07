@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Bluetooth positioning app</string>
+    <string name="waiting_for_location">等待定位...</string>
+</resources>
