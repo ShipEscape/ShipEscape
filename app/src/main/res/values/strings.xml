@@ -1,4 +1,5 @@
 <resources>
-    <string name="app_name">Bluetooth positioning app</string>
+    <string name="app_name">ShipEscape</string>
     <string name="waiting_for_location">等待定位...</string>
+    <string name="title_activity_main">MainActivity</string>
 </resources>

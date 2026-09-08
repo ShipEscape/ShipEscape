@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Bluetooth positioning app"
+rootProject.name = "ShipEscape"
 include(":app")
