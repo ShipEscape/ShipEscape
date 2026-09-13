@@ -62,8 +62,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shipescape.R
 import com.shipescape.utils.MainViewModel
 import com.shipescape.utils.parseCoordinates
-import com.shipescape.utils.x
-import com.shipescape.utils.y
 import kotlin.math.roundToInt
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -192,33 +190,6 @@ fun EditScreen(viewModel: MainViewModel) {
                     .onSizeChanged { size ->
                         mapContainerSize = size
                     })
-
-            // 当前坐标圆点
-            if (mapContainerSize.width > 0 && imgWidth > 0) {
-                val fitScale =
-                    minOf(mapContainerSize.width / imgWidth, mapContainerSize.height / imgHeight)
-                val mapImageLeft = (mapContainerSize.width - imgWidth * fitScale) / 2f
-                val mapImageTop = (mapContainerSize.height - imgHeight * fitScale) / 2f
-
-                // 未缩放时的坐标
-                val originalX = mapImageLeft + x * fitScale
-                val originalY = mapImageTop + y * fitScale
-
-                val sizeDp = 24.dp
-                val radiusPx = with(LocalDensity.current) { (sizeDp / 2).toPx() }
-                Box(modifier = Modifier
-                    .offset {
-                        IntOffset(
-                            x = (originalX * scale + offset.x - radiusPx).roundToInt(),
-                            y = (originalY * scale + offset.y - radiusPx).roundToInt()
-                        )
-                    }
-                    .size(sizeDp)
-                    .background(MaterialTheme.colorScheme.background, CircleShape)
-                    .border(
-                        5.dp, MaterialTheme.colorScheme.primary, CircleShape
-                    ))
-            }
 
 
             // 信标圆点
