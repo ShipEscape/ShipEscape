@@ -15,7 +15,7 @@ fun parseCoordinates(value: String): Offset? {
 
 fun rssi2Distance(
     rssi: Double,
-    txPower: Double = -59.0,   // TODO: 信标 1 米处的 RSSI
+    txPower: Double = -59.0,
     pathLossExponent: Double = 2.0
 ): Double {
     if (rssi == 0.0) return -1.0

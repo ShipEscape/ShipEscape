@@ -22,6 +22,20 @@ object MapSerializer : Serializer<Map<String, String>> {
             output.write(Json.encodeToString(t).toByteArray())
         }
 }
+object MapDoubleSerializer : Serializer<Map<String, Double>> {
+    override val defaultValue = emptyMap<String, Double>()
+
+    override suspend fun readFrom(input: InputStream): Map<String, Double> =
+        runCatching { Json.decodeFromString<Map<String, Double>>(input.readBytes().decodeToString()) }
+            .getOrDefault(defaultValue)
+
+    override suspend fun writeTo(t: Map<String, Double>, output: OutputStream) =
+        withContext(Dispatchers.IO) {
+            output.write(Json.encodeToString(t).toByteArray())
+        }
+}
 
 val Context.beaconStore: DataStore<Map<String, String>> by dataStore("beacons.json", MapSerializer)
 val Context.beaconPositionStore: DataStore<Map<String, String>> by dataStore("beaconPositions.json", MapSerializer)
+val Context.beaconTxPowerStore: DataStore<Map<String, Double>> by dataStore("beaconTxPowers.json",
+    MapDoubleSerializer)
