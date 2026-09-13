@@ -1,5 +1,6 @@
 package com.shipescape
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Bundle
@@ -15,11 +16,19 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -27,9 +36,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.datastore.dataStore
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.shipescape.ui.screens.MapScreen
 import com.shipescape.ui.screens.SettingsScreen
 import com.shipescape.ui.theme.ShipEscapeTheme
+import com.shipescape.utils.MainViewModel
+import com.shipescape.utils.MapSerializer
+import com.shipescape.utils.beaconStore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,38 +62,42 @@ class MainActivity : ComponentActivity() {
 @PreviewScreenSizes
 @Composable
 fun ShipEscapeApp() {
+    val context = LocalContext.current
+    val viewModel: MainViewModel = viewModel()
+    // 变量
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.MAP) }
-    val context= LocalContext.current
+    val beacons by context.beaconStore.data.collectAsState(initial = emptyMap()) // MAC:名称
+    var saveBeaconMacs by remember { mutableStateOf(false) }
 
     // 应用打开时，自动启动服务
     LaunchedEffect(Unit) {
-
         val intent = Intent(context, MainService::class.java)
         context.startForegroundService(intent)
     }
 
     // 底部选项卡
+    // 横屏时，导航栏在左侧
+    val adaptiveInfo = currentWindowAdaptiveInfoV2()
+    val layoutType = with(adaptiveInfo) {
+        if (windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT && windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.COMPACT) {
+            NavigationSuiteType.NavigationRail
+        } else NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
+
+    }
     NavigationSuiteScaffold(
-        navigationSuiteItems = {
+        layoutType = layoutType, navigationSuiteItems = {
             AppDestinations.entries.forEach {
                 item(
-                    icon = {
-                        Icon(
-                            it.icon,
-                            contentDescription = it.label
-                        )
-                    },
+                    icon = { Icon(it.icon, contentDescription = it.label) },
                     label = { Text(it.label) },
                     selected = it == currentDestination,
-                    onClick = { currentDestination = it }
-                )
+                    onClick = { currentDestination = it })
             }
-        }
-    ) {
+        }) {
         when (currentDestination) {
             AppDestinations.MAP -> MapScreen()
             AppDestinations.EDIT -> MapScreen()
-            AppDestinations.SETTINGS -> SettingsScreen()
+            AppDestinations.SETTINGS -> SettingsScreen(viewModel)
         }
     }
 }
@@ -86,7 +106,7 @@ enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
 ) {
-    MAP("地图", Icons.Default.Map),
-    EDIT("编辑", Icons.Default.Edit),
-    SETTINGS("设置", Icons.Default.Settings)
+    MAP("地图", Icons.Default.Map), EDIT("编辑", Icons.Default.Edit), SETTINGS(
+        "设置", Icons.Default.Settings
+    )
 }
