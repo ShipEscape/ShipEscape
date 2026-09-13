@@ -56,11 +56,12 @@ fun SettingsScreen(viewModel: MainViewModel) {
             Modifier
                 .padding(innerPadding)
                 .padding(horizontal = 8.dp)
-                .heightIn(max=500.dp)
+                .heightIn(max = 500.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             Text("已添加的蓝牙信标", color = MaterialTheme.colorScheme.primary)
             val beaconMap by viewModel.beaconMapState.collectAsStateWithLifecycle()
+            val beaconTxPowerMap by viewModel.beaconTxPowerMapState.collectAsStateWithLifecycle()
             val sortedBeaconList = remember(beaconMap) {
                 beaconMap.entries.sortedBy { it.value }
             }
@@ -70,7 +71,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     BluetoothDeviceRow(
                         entry.key, BluetoothDevice(
                             entry.value, SharedState.bluetoothDevices[entry.key]?.rssi
-                        ), beaconMap, viewModel
+                        ), beaconMap, beaconTxPowerMap,viewModel
                     )
                     Spacer(Modifier.size(6.dp))
                 }
@@ -84,7 +85,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
             LazyColumn(Modifier.height(500.dp)) {
                 items(
                     items = deviceList, key = { (addr, _) -> addr }) { (addr, device) ->
-                    BluetoothDeviceRow(addr, device, beaconMap, viewModel)
+                    BluetoothDeviceRow(addr, device, beaconMap, beaconTxPowerMap,viewModel)
                     Spacer(Modifier.size(6.dp))
                 }
             }
@@ -94,11 +95,30 @@ fun SettingsScreen(viewModel: MainViewModel) {
         { viewModel.beaconDialogExpanded = false },
         title = { Text("编辑") },
         text = {
-            TextField(viewModel.nameToSave, { viewModel.nameToSave = it }, label = { Text("名称") })
+            Column {
+                TextField(
+                    viewModel.nameToSave,
+                    { viewModel.nameToSave = it },
+                    label = { Text("名称") })
+                TextField(
+                    viewModel.txPowerToSave,
+                    { viewModel.txPowerToSave = it },
+                    label = { Text("TxPower") })
+            }
         },
         confirmButton = {
             TextButton({
                 viewModel.saveBeaconKeyValue(viewModel.addrToSave, viewModel.nameToSave)
+                try {
+                    viewModel.saveBeaconTxPowerKeyValue(
+                        viewModel.addrToSave, viewModel.txPowerToSave.toDouble()
+                    )
+                } catch (_: Exception) { // 用户输入不合法
+                    viewModel.saveBeaconTxPowerKeyValue(
+                        viewModel.addrToSave,
+                        SharedState.bluetoothDevices[viewModel.addrToSave]?.rssi ?: -59.0
+                    )
+                }
                 viewModel.beaconDialogExpanded = false
             }) {
                 Text("保存")
@@ -107,6 +127,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
         dismissButton = {
             TextButton({
                 viewModel.deleteBeaconKey(viewModel.addrToSave)
+                viewModel.deleteBeaconPositionKey(viewModel.addrToSave)
                 viewModel.beaconDialogExpanded = false
             }) {
                 Text("删除")
@@ -117,7 +138,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
 
 @Composable
 fun BluetoothDeviceRow(
-    addr: String, device: BluetoothDevice, beaconMap: Map<String, String>, viewModel: MainViewModel
+    addr: String, device: BluetoothDevice, beaconMap: Map<String, String>, beaconTxPowerMap: Map<String, Double>, viewModel: MainViewModel
 ) {
     Row(
         Modifier
@@ -141,13 +162,16 @@ fun BluetoothDeviceRow(
                 lineHeight = 12.sp
             )
         }
-        FilledIconButton({
-            viewModel.addrToSave = addr
-            viewModel.nameToSave = beaconMap.getOrDefault(addr, device.name ?: addr)
-            viewModel.beaconDialogExpanded = true
-        },colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        )) {
+        FilledIconButton(
+            {
+                viewModel.addrToSave = addr
+                viewModel.nameToSave = beaconMap.getOrDefault(addr, device.name ?: addr)
+                viewModel.txPowerToSave= beaconTxPowerMap.getOrDefault(addr, device.rssi?:"-59").toString()
+                viewModel.beaconDialogExpanded  = true
+            }, colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            )
+        ) {
             if (addr in beaconMap.keys) Icon(Icons.Default.Edit, null)
             else Icon(Icons.Default.Add, null)
         }

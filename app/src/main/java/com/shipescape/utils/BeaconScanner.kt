@@ -33,13 +33,11 @@ class BeaconScanner(private val scanner: BluetoothLeScanner) {
     }
 
     @SuppressLint("MissingPermission")
-    fun start(targetMac: String? = null) {
+    fun start(targetMacs: List<String> = emptyList()) {
         val filters = mutableListOf<ScanFilter>()
 
         // TODO:过滤规则
-        if (!targetMac.isNullOrEmpty()) {
-            filters.add(ScanFilter.Builder().setDeviceAddress(targetMac).build())
-        }
+        for (i in targetMacs) filters.add(ScanFilter.Builder().setDeviceAddress(i).build())
 
         scanner.startScan(filters, scanSettings, scanCallback)
     }
@@ -51,11 +49,11 @@ class BeaconScanner(private val scanner: BluetoothLeScanner) {
 
     // 滤波
     private val rssiHistory = mutableMapOf<String, ArrayDeque<Int>>()
-    private val WINDOW_SIZE = 5 // 缓存最近 5 次信号取均值
+    private val windowSize = 5 // 缓存最近 5 次信号取均值
 
     private fun filterRssi(mac: String, newRssi: Int): Double {
         val queue = rssiHistory.getOrPut(mac) { ArrayDeque() }
-        if (queue.size >= WINDOW_SIZE) {
+        if (queue.size >= windowSize) {
             queue.removeFirst()
         }
         queue.addLast(newRssi)

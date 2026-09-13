@@ -53,6 +53,7 @@ fun MapScreen(viewModel: MainViewModel) {
 
     val beaconMap by viewModel.beaconMapState.collectAsStateWithLifecycle()
     val beaconPositionMap by viewModel.beaconPositionMapState.collectAsStateWithLifecycle()
+    val beaconTxPowerMap by viewModel.beaconTxPowerMapState.collectAsStateWithLifecycle()
     // 用蓝牙信标信号强度推算当前坐标
     val currentPos by remember {
         derivedStateOf {
@@ -64,7 +65,7 @@ fun MapScreen(viewModel: MainViewModel) {
                 val imgCoords = parseCoordinates(valueStr) ?: return@forEach
                 val rssi = SharedState.bluetoothDevices[key]?.rssi ?: return@forEach
 
-                val distance = rssi2Distance(rssi)
+                val distance = rssi2Distance(rssi,beaconTxPowerMap[key]?:-59.0)
                 if (distance <= 0.0) return@forEach
 
                 val weight = 1.0 / (distance * distance)

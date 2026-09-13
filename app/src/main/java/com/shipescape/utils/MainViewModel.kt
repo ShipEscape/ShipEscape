@@ -2,6 +2,7 @@ package com.shipescape.utils
 
 import android.app.Application
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
@@ -14,6 +15,7 @@ import kotlin.collections.emptyMap
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     var addrToSave by mutableStateOf("")
     var nameToSave by mutableStateOf("")
+    var txPowerToSave by mutableStateOf("-59")
     var beaconDialogExpanded by mutableStateOf(false)
     private val beaconStore = application.beaconStore
 
@@ -53,6 +55,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteBeaconPositionKey(key: String) {
         viewModelScope.launch {
             beaconPositionStore.updateData { it - key }
+        }
+    }
+
+    private val beaconTxPowerStore = application.beaconTxPowerStore
+
+    val beaconTxPowerMapState = beaconTxPowerStore.data.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
+    )
+
+    fun saveBeaconTxPowerKeyValue(key: String, value: Double) {
+        viewModelScope.launch {
+            beaconTxPowerStore.updateData { it + (key to value) }
+        }
+    }
+
+    fun deleteBeaconTxPowerKey(key: String) {
+        viewModelScope.launch {
+            beaconTxPowerStore.updateData { it - key }
         }
     }
 }
