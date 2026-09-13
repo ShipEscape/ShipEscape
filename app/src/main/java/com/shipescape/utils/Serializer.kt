@@ -24,3 +24,4 @@ object MapSerializer : Serializer<Map<String, String>> {
 }
 
 val Context.beaconStore: DataStore<Map<String, String>> by dataStore("beacons.json", MapSerializer)
+val Context.beaconPositionStore: DataStore<Map<String, String>> by dataStore("beaconPositions.json", MapSerializer)

@@ -21,15 +21,16 @@ class MainService : Service() {
         return START_STICKY
     }
 
-    private fun startScanner(){
+    private fun startScanner() {
         try {
-            val context=this
+            val context = this
             val bluetoothManager = context.getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
             val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
             BeaconScanner(bluetoothAdapter!!.bluetoothLeScanner!!).start()
-        }catch (_: Exception){// TODO: 蓝牙未开启
+        } catch (_: Exception) {// TODO: 蓝牙未开启
         }
     }
+
     private fun startForegroundServiceNotification() {
         val channelId = "scanner"
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -42,10 +43,10 @@ class MainService : Service() {
         }
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(R.string.app_name.toString())
-            .setContentText("正在运行")
+            .setContentTitle(R.string.app_name.toString()).setContentText("正在运行")
             .setSmallIcon(android.R.drawable.ic_menu_info_details).setOngoing(true).build()
         startForeground(1001, notification)
     }
+
     override fun onBind(intent: Intent?): IBinder? = null
 }

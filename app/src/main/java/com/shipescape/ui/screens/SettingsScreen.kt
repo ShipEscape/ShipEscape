@@ -17,8 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -29,9 +30,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +56,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
             Modifier
                 .padding(innerPadding)
                 .padding(horizontal = 8.dp)
+                .heightIn(max=500.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             Text("已添加的蓝牙信标", color = MaterialTheme.colorScheme.primary)
@@ -98,7 +98,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
         },
         confirmButton = {
             TextButton({
-                viewModel.saveKeyValue(viewModel.addrToSave, viewModel.nameToSave)
+                viewModel.saveBeaconKeyValue(viewModel.addrToSave, viewModel.nameToSave)
                 viewModel.beaconDialogExpanded = false
             }) {
                 Text("保存")
@@ -106,7 +106,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
         },
         dismissButton = {
             TextButton({
-                viewModel.deleteKey(viewModel.addrToSave)
+                viewModel.deleteBeaconKey(viewModel.addrToSave)
                 viewModel.beaconDialogExpanded = false
             }) {
                 Text("删除")
@@ -141,11 +141,13 @@ fun BluetoothDeviceRow(
                 lineHeight = 12.sp
             )
         }
-        IconButton({
+        FilledIconButton({
             viewModel.addrToSave = addr
             viewModel.nameToSave = beaconMap.getOrDefault(addr, device.name ?: addr)
             viewModel.beaconDialogExpanded = true
-        }) {
+        },colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+        )) {
             if (addr in beaconMap.keys) Icon(Icons.Default.Edit, null)
             else Icon(Icons.Default.Add, null)
         }

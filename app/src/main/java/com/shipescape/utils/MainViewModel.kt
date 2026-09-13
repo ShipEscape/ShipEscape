@@ -3,7 +3,6 @@ package com.shipescape.utils
 import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,23 +15,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var addrToSave by mutableStateOf("")
     var nameToSave by mutableStateOf("")
     var beaconDialogExpanded by mutableStateOf(false)
-    private val dataStore = application.beaconStore
+    private val beaconStore = application.beaconStore
 
-    val beaconMapState = dataStore.data.stateIn(
+    val beaconMapState = beaconStore.data.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyMap()
     )
 
-    fun saveKeyValue(key: String, value: String) {
+    fun saveBeaconKeyValue(key: String, value: String) {
         viewModelScope.launch {
-            dataStore.updateData { it + (key to value) }
+            beaconStore.updateData { it + (key to value) }
         }
     }
 
-    fun deleteKey(key: String) {
+    fun deleteBeaconKey(key: String) {
         viewModelScope.launch {
-            dataStore.updateData { it - key }
+            beaconStore.updateData { it - key }
+        }
+    }
+
+
+    private val beaconPositionStore = application.beaconPositionStore
+
+    val beaconPositionMapState = beaconPositionStore.data.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
+    )
+
+    fun saveBeaconPositionKeyValue(key: String, value: String) {
+        viewModelScope.launch {
+            beaconPositionStore.updateData { it + (key to value) }
+        }
+    }
+
+    fun deleteBeaconPositionKey(key: String) {
+        viewModelScope.launch {
+            beaconPositionStore.updateData { it - key }
         }
     }
 }
