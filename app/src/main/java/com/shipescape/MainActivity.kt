@@ -1,51 +1,37 @@
 package com.shipescape
 
-import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Icon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import androidx.datastore.dataStore
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.shipescape.ui.screens.EditScreen
 import com.shipescape.ui.screens.MapScreen
 import com.shipescape.ui.screens.SettingsScreen
 import com.shipescape.ui.theme.ShipEscapeTheme
 import com.shipescape.utils.MainViewModel
-import com.shipescape.utils.MapSerializer
-import com.shipescape.utils.beaconStore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,8 +52,6 @@ fun ShipEscapeApp() {
     val viewModel: MainViewModel = viewModel()
     // 变量
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.MAP) }
-    val beacons by context.beaconStore.data.collectAsState(initial = emptyMap()) // MAC:名称
-    var saveBeaconMacs by remember { mutableStateOf(false) }
 
     // 应用打开时，自动启动服务
     LaunchedEffect(Unit) {
@@ -95,8 +79,8 @@ fun ShipEscapeApp() {
             }
         }) {
         when (currentDestination) {
-            AppDestinations.MAP -> MapScreen()
-            AppDestinations.EDIT -> MapScreen()
+            AppDestinations.MAP -> MapScreen(viewModel)
+            AppDestinations.EDIT -> EditScreen(viewModel)
             AppDestinations.SETTINGS -> SettingsScreen(viewModel)
         }
     }

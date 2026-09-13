@@ -22,8 +22,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -34,14 +36,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shipescape.R
+import com.shipescape.utils.MainViewModel
+import com.shipescape.utils.parseCoordinates
 import com.shipescape.utils.x
 import com.shipescape.utils.y
 import kotlin.math.roundToInt
 
 @Composable
-fun MapScreen() {
+fun MapScreen(viewModel: MainViewModel) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    val beaconMap by viewModel.beaconMapState.collectAsStateWithLifecycle()
+    val beaconPositionMap by viewModel.beaconPositionMapState.collectAsStateWithLifecycle()
+
     Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainer, topBar = {
         LargeFlexibleTopAppBar(
             title = { Text(stringResource(R.string.app_name)) },
@@ -116,6 +126,56 @@ fun MapScreen() {
                     .border(
                         5.dp, MaterialTheme.colorScheme.primary, CircleShape
                     ))
+            }
+
+
+
+
+            // 信标圆点
+            if (mapContainerSize.width > 0 && imgWidth > 0) {
+                val fitScale = minOf(
+                    mapContainerSize.width / imgWidth, mapContainerSize.height / imgHeight
+                )
+                val mapImageLeft = (mapContainerSize.width - imgWidth * fitScale) / 2f
+                val mapImageTop = (mapContainerSize.height - imgHeight * fitScale) / 2f
+
+                val sizeDp = 24.dp
+                val radiusPx = with(LocalDensity.current) { (sizeDp / 2).toPx() }
+
+                beaconPositionMap.forEach { (key, valueStr) ->
+                    val imgCoords = parseCoordinates(valueStr)
+
+
+                    if (imgCoords != null) {
+                        val originalX = mapImageLeft + imgCoords.x * fitScale
+                        val originalY = mapImageTop + imgCoords.y * fitScale
+                        val screenX = originalX * scale + offset.x
+                        val screenY = originalY * scale + offset.y
+
+                        Box(
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        x = (screenX - radiusPx).roundToInt(),
+                                        y = (screenY - radiusPx).roundToInt()
+                                    )
+                                }
+                                .size(sizeDp)
+                                .background(MaterialTheme.colorScheme.background, CircleShape)
+                                .border(
+                                    width = 2.dp,
+                                    color = Color.Gray,
+                                    shape = CircleShape
+                                ), contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = (beaconMap[key] ?: key).take(2),
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    }
+                }
             }
         }
     }
