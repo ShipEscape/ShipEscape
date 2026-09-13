@@ -7,10 +7,10 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.11.0"
 activityCompose = "1.13.0"
-composeBom = "2026.08.00"
+composeBom = "2026.09.00"
 savedstateKtx = "1.5.0"
-runtime = "1.12.0"
-material3 = "1.5.0-alpha27"
+runtime = "1.12.1"
+material3 = "1.5.0-alpha28"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -40,4 +40,5 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

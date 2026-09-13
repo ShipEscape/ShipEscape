@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization")
 }
 
 android {
@@ -144,6 +145,9 @@ implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    implementation("androidx.datastore:datastore:1.2.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 //
 //    implementation("dev.rikka.shizuku:api:13.1.5")
 //    implementation("dev.rikka.shizuku:provider:13.1.5")
