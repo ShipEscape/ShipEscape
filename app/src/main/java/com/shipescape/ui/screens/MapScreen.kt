@@ -17,7 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,9 +42,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shipescape.R
 import com.shipescape.utils.MainViewModel
+import com.shipescape.utils.SharedState
 import com.shipescape.utils.parseCoordinates
-import com.shipescape.utils.x
-import com.shipescape.utils.y
+import com.shipescape.utils.rssi2Distance
 import kotlin.math.roundToInt
 
 @Composable
@@ -51,6 +53,33 @@ fun MapScreen(viewModel: MainViewModel) {
 
     val beaconMap by viewModel.beaconMapState.collectAsStateWithLifecycle()
     val beaconPositionMap by viewModel.beaconPositionMapState.collectAsStateWithLifecycle()
+    // 用蓝牙信标信号强度推算当前坐标
+    val currentPos by remember {
+        derivedStateOf {
+            var weightedXSum = 0.0
+            var weightedYSum = 0.0
+            var weightSum = 0.0
+
+            beaconPositionMap.forEach { (key, valueStr) ->
+                val imgCoords = parseCoordinates(valueStr) ?: return@forEach
+                val rssi = SharedState.bluetoothDevices[key]?.rssi ?: return@forEach
+
+                val distance = rssi2Distance(rssi)
+                if (distance <= 0.0) return@forEach
+
+                val weight = 1.0 / (distance * distance)
+                weightedXSum += imgCoords.x * weight
+                weightedYSum += imgCoords.y * weight
+                weightSum += weight
+            }
+
+            if (weightSum > 0.0) {
+                Offset((weightedXSum / weightSum).toFloat(), (weightedYSum / weightSum).toFloat())
+            } else {
+                null
+            }
+        }
+    }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainer, topBar = {
         LargeFlexibleTopAppBar(
@@ -109,8 +138,8 @@ fun MapScreen(viewModel: MainViewModel) {
                 val mapImageTop = (mapContainerSize.height - imgHeight * fitScale) / 2f
 
                 // 未缩放时的坐标
-                val originalX = mapImageLeft + x * fitScale
-                val originalY = mapImageTop + y * fitScale
+                val originalX = mapImageLeft + (currentPos?.x?.toDouble() ?: 0.0) * fitScale
+                val originalY = mapImageTop + (currentPos?.y?.toDouble() ?: 0.0) * fitScale
 
                 val sizeDp = 24.dp
                 val radiusPx = with(LocalDensity.current) { (sizeDp / 2).toPx() }
@@ -127,8 +156,6 @@ fun MapScreen(viewModel: MainViewModel) {
                         5.dp, MaterialTheme.colorScheme.primary, CircleShape
                     ))
             }
-
-
 
 
             // 信标圆点
@@ -152,22 +179,18 @@ fun MapScreen(viewModel: MainViewModel) {
                         val screenX = originalX * scale + offset.x
                         val screenY = originalY * scale + offset.y
 
-                        Box(
-                            modifier = Modifier
-                                .offset {
-                                    IntOffset(
-                                        x = (screenX - radiusPx).roundToInt(),
-                                        y = (screenY - radiusPx).roundToInt()
-                                    )
-                                }
-                                .size(sizeDp)
-                                .background(MaterialTheme.colorScheme.background, CircleShape)
-                                .border(
-                                    width = 2.dp,
-                                    color = Color.Gray,
-                                    shape = CircleShape
-                                ), contentAlignment = Alignment.Center
-                        ) {
+                        Box(modifier = Modifier
+                            .offset {
+                                IntOffset(
+                                    x = (screenX - radiusPx).roundToInt(),
+                                    y = (screenY - radiusPx).roundToInt()
+                                )
+                            }
+                            .size(sizeDp)
+                            .background(MaterialTheme.colorScheme.background, CircleShape)
+                            .border(
+                                width = 2.dp, color = Color.Gray, shape = CircleShape
+                            ), contentAlignment = Alignment.Center) {
                             Text(
                                 text = (beaconMap[key] ?: key).take(2),
                                 fontSize = 10.sp,
