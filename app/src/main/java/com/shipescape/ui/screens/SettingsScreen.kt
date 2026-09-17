@@ -1,9 +1,11 @@
 package com.shipescape.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -52,42 +54,45 @@ fun SettingsScreen(viewModel: MainViewModel) {
             ), scrollBehavior = scrollBehavior
         )
     }, modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)) { innerPadding ->
-        Column(
-            Modifier
+        val beaconMap by viewModel.beaconMapState.collectAsStateWithLifecycle()
+        val beaconTxPowerMap by viewModel.beaconTxPowerMapState.collectAsStateWithLifecycle()
+        val sortedBeaconList = remember(beaconMap) {
+            beaconMap.entries.sortedBy { it.value }
+        }
+        val deviceList by remember {
+            derivedStateOf {
+                SharedState.bluetoothDevices.entries.sortedByDescending { it.value.rssi }
+            }
+        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 8.dp)
-                .heightIn(max = 500.dp)
-                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("已添加的蓝牙信标", color = MaterialTheme.colorScheme.primary)
-            val beaconMap by viewModel.beaconMapState.collectAsStateWithLifecycle()
-            val beaconTxPowerMap by viewModel.beaconTxPowerMapState.collectAsStateWithLifecycle()
-            val sortedBeaconList = remember(beaconMap) {
-                beaconMap.entries.sortedBy { it.value }
+            item(key = "title_added_beacons") {
+                Text("已添加的蓝牙信标", color = MaterialTheme.colorScheme.primary)
             }
-            LazyColumn(Modifier.heightIn(0.dp, 500.dp)) {
-                items(
-                    items = sortedBeaconList, key = { entry -> entry.key }) { entry ->
-                    BluetoothDeviceRow(
-                        entry.key, BluetoothDevice(
-                            entry.value, SharedState.bluetoothDevices[entry.key]?.rssi
-                        ), beaconMap, beaconTxPowerMap,viewModel
-                    )
-                    Spacer(Modifier.size(6.dp))
-                }
+
+            items(
+                items = sortedBeaconList, key = { entry -> "added_${entry.key}" }) { entry ->
+                BluetoothDeviceRow(
+                    entry.key, BluetoothDevice(
+                        entry.value, SharedState.bluetoothDevices[entry.key]?.rssi
+                    ), beaconMap, beaconTxPowerMap, viewModel
+                )
             }
-            Text("添加蓝牙信标", color = MaterialTheme.colorScheme.primary)
-            val deviceList by remember {
-                derivedStateOf {
-                    SharedState.bluetoothDevices.entries.sortedByDescending { it.value.rssi }
-                }
+            item(key = "title_scan") {
+                Spacer(Modifier.height(10.dp))
+                Text("添加蓝牙信标", color = MaterialTheme.colorScheme.primary)
             }
-            LazyColumn(Modifier.height(500.dp)) {
-                items(
-                    items = deviceList, key = { (addr, _) -> addr }) { (addr, device) ->
-                    BluetoothDeviceRow(addr, device, beaconMap, beaconTxPowerMap,viewModel)
-                    Spacer(Modifier.size(6.dp))
-                }
+
+            items(
+                items = deviceList, key = { (addr, _) -> "scanned_$addr" }) { (addr, device) ->
+                BluetoothDeviceRow(
+                    addr, device, beaconMap, beaconTxPowerMap, viewModel
+                )
             }
         }
     }
@@ -138,7 +143,11 @@ fun SettingsScreen(viewModel: MainViewModel) {
 
 @Composable
 fun BluetoothDeviceRow(
-    addr: String, device: BluetoothDevice, beaconMap: Map<String, String>, beaconTxPowerMap: Map<String, Double>, viewModel: MainViewModel
+    addr: String,
+    device: BluetoothDevice,
+    beaconMap: Map<String, String>,
+    beaconTxPowerMap: Map<String, Double>,
+    viewModel: MainViewModel
 ) {
     Row(
         Modifier
@@ -166,8 +175,9 @@ fun BluetoothDeviceRow(
             {
                 viewModel.addrToSave = addr
                 viewModel.nameToSave = beaconMap.getOrDefault(addr, device.name ?: addr)
-                viewModel.txPowerToSave= beaconTxPowerMap.getOrDefault(addr, device.rssi?:"-59").toString()
-                viewModel.beaconDialogExpanded  = true
+                viewModel.txPowerToSave =
+                    beaconTxPowerMap.getOrDefault(addr, device.rssi ?: "-59").toString()
+                viewModel.beaconDialogExpanded = true
             }, colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
             )
