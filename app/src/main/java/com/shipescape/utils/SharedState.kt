@@ -8,7 +8,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 data class BluetoothDevice(
     val name: String?,
-    val rssi: Double?
+    val rssi: Double?,
+    val lastRefreshMillis:Long=0
 )
 
 

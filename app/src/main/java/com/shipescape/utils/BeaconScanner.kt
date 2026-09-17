@@ -7,6 +7,7 @@ import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.util.Log
+val maxTimeMillis: Long = 1000 * 60
 
 class BeaconScanner(private val scanner: BluetoothLeScanner) {
     private val scanSettings =
@@ -24,7 +25,8 @@ class BeaconScanner(private val scanner: BluetoothLeScanner) {
             val rssi = result.rssi
             // 获取平滑后的 RSSI
             val smoothRssi = filterRssi(deviceAddress, rssi)
-            SharedState.bluetoothDevices[deviceAddress] = BluetoothDevice(name, smoothRssi)
+            SharedState.bluetoothDevices[deviceAddress] =
+                BluetoothDevice(name, smoothRssi, System.currentTimeMillis())
         }
 
         override fun onScanFailed(errorCode: Int) {

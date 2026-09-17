@@ -41,8 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shipescape.R
+import com.shipescape.utils.BeaconScanner
 import com.shipescape.utils.MainViewModel
 import com.shipescape.utils.SharedState
+import com.shipescape.utils.maxTimeMillis
 import com.shipescape.utils.parseCoordinates
 import com.shipescape.utils.rssi2Distance
 import kotlin.math.roundToInt
@@ -63,9 +65,12 @@ fun MapScreen(viewModel: MainViewModel) {
 
             beaconPositionMap.forEach { (key, valueStr) ->
                 val imgCoords = parseCoordinates(valueStr) ?: return@forEach
-                val rssi = SharedState.bluetoothDevices[key]?.rssi ?: return@forEach
+                val rssi =
+                    if ((System.currentTimeMillis() - (SharedState.bluetoothDevices[key]?.lastRefreshMillis
+                            ?: 0)) <= maxTimeMillis
+                    ) SharedState.bluetoothDevices[key]?.rssi?:-150.0 else -150.0
 
-                val distance = rssi2Distance(rssi,beaconTxPowerMap[key]?:-59.0)
+                val distance = rssi2Distance(rssi, beaconTxPowerMap[key] ?: -59.0)
                 if (distance <= 0.0) return@forEach
 
                 val weight = 1.0 / (distance * distance)
@@ -144,18 +149,19 @@ fun MapScreen(viewModel: MainViewModel) {
 
                 val sizeDp = 24.dp
                 val radiusPx = with(LocalDensity.current) { (sizeDp / 2).toPx() }
-                Box(modifier = Modifier
-                    .offset {
-                        IntOffset(
-                            x = (originalX * scale + offset.x - radiusPx).roundToInt(),
-                            y = (originalY * scale + offset.y - radiusPx).roundToInt()
-                        )
-                    }
-                    .size(sizeDp)
-                    .background(MaterialTheme.colorScheme.background, CircleShape)
-                    .border(
-                        5.dp, MaterialTheme.colorScheme.primary, CircleShape
-                    ))
+                Box(
+                    modifier = Modifier
+                        .offset {
+                            IntOffset(
+                                x = (originalX * scale + offset.x - radiusPx).roundToInt(),
+                                y = (originalY * scale + offset.y - radiusPx).roundToInt()
+                            )
+                        }
+                        .size(sizeDp)
+                        .background(MaterialTheme.colorScheme.background, CircleShape)
+                        .border(
+                            5.dp, MaterialTheme.colorScheme.primary, CircleShape
+                        ))
             }
 
 
@@ -180,18 +186,19 @@ fun MapScreen(viewModel: MainViewModel) {
                         val screenX = originalX * scale + offset.x
                         val screenY = originalY * scale + offset.y
 
-                        Box(modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = (screenX - radiusPx).roundToInt(),
-                                    y = (screenY - radiusPx).roundToInt()
-                                )
-                            }
-                            .size(sizeDp)
-                            .background(MaterialTheme.colorScheme.background, CircleShape)
-                            .border(
-                                width = 2.dp, color = Color.Gray, shape = CircleShape
-                            ), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        x = (screenX - radiusPx).roundToInt(),
+                                        y = (screenY - radiusPx).roundToInt()
+                                    )
+                                }
+                                .size(sizeDp)
+                                .background(MaterialTheme.colorScheme.background, CircleShape)
+                                .border(
+                                    width = 2.dp, color = Color.Gray, shape = CircleShape
+                                ), contentAlignment = Alignment.Center) {
                             Text(
                                 text = (beaconMap[key] ?: key).take(2),
                                 fontSize = 10.sp,
