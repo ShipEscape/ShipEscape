@@ -6,7 +6,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.util.Log
+
 val maxTimeMillis: Long = 1000 * 60
 
 class BeaconScanner(private val scanner: BluetoothLeScanner) {
@@ -30,7 +30,6 @@ class BeaconScanner(private val scanner: BluetoothLeScanner) {
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Log.e("BeaconScanner", "扫描失败，错误代码: $errorCode")
         }
     }
 

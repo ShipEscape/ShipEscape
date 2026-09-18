@@ -148,9 +148,4 @@ implementation(libs.androidx.core.ktx)
 
     implementation("androidx.datastore:datastore:1.2.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
-//
-//    implementation("dev.rikka.shizuku:api:13.1.5")
-//    implementation("dev.rikka.shizuku:provider:13.1.5")
-//    implementation("io.ktor:ktor-server-cio:3.5.2")
-//    implementation("io.ktor:ktor-server-websockets:3.5.2")
 }
