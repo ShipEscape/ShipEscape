@@ -27,7 +27,7 @@ class MainService : Service() {
             val bluetoothManager = context.getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
             val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
             BeaconScanner(bluetoothAdapter!!.bluetoothLeScanner!!).start()
-        } catch (_: Exception) {// TODO: 蓝牙未开启
+        } catch (_: Exception) { // TODO: 蓝牙未开启
         }
     }
 
@@ -37,13 +37,13 @@ class MainService : Service() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                channelId, R.string.app_name.toString(), NotificationManager.IMPORTANCE_LOW
+                channelId, this.getString(R.string.app_name), NotificationManager.IMPORTANCE_LOW
             )
             notificationManager.createNotificationChannel(channel)
         }
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(R.string.app_name.toString()).setContentText("正在运行")
+            .setContentTitle(this.getString(R.string.app_name)).setContentText("正在运行")
             .setSmallIcon(android.R.drawable.ic_menu_info_details).setOngoing(true).build()
         startForeground(1001, notification)
     }

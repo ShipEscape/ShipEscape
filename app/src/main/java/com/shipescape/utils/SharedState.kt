@@ -1,10 +1,6 @@
 package com.shipescape.utils
 
-import android.net.Uri
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 data class BluetoothDevice(
     val name: String?,
