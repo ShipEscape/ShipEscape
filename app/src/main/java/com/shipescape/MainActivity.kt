@@ -110,15 +110,18 @@ fun ShipEscapeApp() {
         return locationPermissionGranted && nearbyDevicesPermissionGranted
     }
 
-    // 应用打开时，检查权限，启动服务
-    LaunchedEffect(Unit) {
-        if (!checkPermissions()) {
-            val intent = Intent(context, WelcomeActivity::class.java)
-            context.startActivity(intent)
-            (context as ComponentActivity).finish()
-        } else {
-            val intent = Intent(context, MainService::class.java)
-            context.startForegroundService(intent)
+    // isBluetoothEnabled 变成 true 时，检查权限，启动服务
+    // 应用启动时该值默认为 true
+    LaunchedEffect(isBluetoothEnabled) {
+        if (isBluetoothEnabled) {
+            if (!checkPermissions()) {
+                val intent = Intent(context, WelcomeActivity::class.java)
+                context.startActivity(intent)
+                (context as ComponentActivity).finish()
+            } else {
+                val intent = Intent(context, MainService::class.java)
+                context.startForegroundService(intent)
+            }
         }
     }
 

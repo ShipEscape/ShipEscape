@@ -27,7 +27,8 @@ class MainService : Service() {
             val bluetoothManager = context.getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
             val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
             BeaconScanner(bluetoothAdapter!!.bluetoothLeScanner!!).start()
-        } catch (_: Exception) { // TODO: 蓝牙未开启
+        } catch (_: Exception) { // 蓝牙未开启
+            stopSelf()
         }
     }
 
