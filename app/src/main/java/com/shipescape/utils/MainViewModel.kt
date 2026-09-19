@@ -2,7 +2,6 @@ package com.shipescape.utils
 
 import android.app.Application
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
@@ -19,6 +18,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var beaconDialogExpanded by mutableStateOf(false)
     private val beaconStore = application.beaconStore
 
+    // 信标
     val beaconMapState = beaconStore.data.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -37,7 +37,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
+    // 信标位置
     private val beaconPositionStore = application.beaconPositionStore
 
     val beaconPositionMapState = beaconPositionStore.data.stateIn(
@@ -58,6 +58,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // 出口
+    private val exitPositionStore = application.exitPositionStore
+
+    val exitPositionMapState = exitPositionStore.data.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
+    )
+
+    fun saveExitPositionKeyValue(key: String, value: String) {
+        viewModelScope.launch {
+            exitPositionStore.updateData { it + (key to value) }
+        }
+    }
+
+    fun deleteExitPositionKey(key: String) {
+        viewModelScope.launch {
+            exitPositionStore.updateData { it - key }
+        }
+    }
+
+    // 距离信标 1m 时的 rssi
     private val beaconTxPowerStore = application.beaconTxPowerStore
 
     val beaconTxPowerMapState = beaconTxPowerStore.data.stateIn(
