@@ -1,9 +1,6 @@
 package com.shipescape.ui.screens
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -22,13 +19,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconButton
@@ -51,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -62,11 +57,9 @@ import com.shipescape.utils.BluetoothDevice
 import com.shipescape.utils.MainViewModel
 import com.shipescape.utils.SharedState
 import com.shipescape.utils.exportDatastore
-import java.io.File
-import androidx.core.net.toUri
-import com.shipescape.R
 import com.shipescape.utils.importDatastore
 import com.shipescape.utils.restartApp
+import java.io.File
 import java.util.Locale
 
 @Composable
@@ -227,10 +220,9 @@ fun SettingsScreen(viewModel: MainViewModel) {
             TextButton({
                 viewModel.deleteBeaconKey(viewModel.addrToSave)
                 viewModel.deleteBeaconPositionKey(viewModel.addrToSave)
+                viewModel.deleteBeaconTxPowerKey(viewModel.addrToSave)
                 viewModel.beaconDialogExpanded = false
-            }) {
-                Text("删除")
-            }
+            }) { Text("删除") }
         })
 }
 
@@ -285,22 +277,30 @@ fun BluetoothDeviceRow(
 
 @Composable
 fun ConfigItem(
-    title: String, desc: String, icon: ImageVector, onClick: () -> Unit
+    title: String,
+    desc: String? = null,
+    icon: ImageVector? = null,
+    background: Color = MaterialTheme.colorScheme.secondaryContainer,
+    onClick: () -> Unit
 ) {
     Row(Modifier
         .fillMaxWidth()
         .clip(RoundedCornerShape(16.dp))
         .clickable { onClick() }
-        .background(MaterialTheme.colorScheme.secondaryContainer)
+        .background(background)
         .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, Modifier.size(36.dp))
+        if (icon != null) {
+            Icon(icon, null, Modifier.size(36.dp))
+        }
         Spacer(Modifier.size(12.dp))
         Column {
             Text(title, fontWeight = FontWeight.Bold)
-            Text(
-                desc, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary
-            )
+            if (desc != null) {
+                Text(
+                    desc, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
     }
     Spacer(Modifier.height(8.dp))
