@@ -96,6 +96,8 @@ fun SettingsScreen(viewModel: MainViewModel) {
                 SharedState.bluetoothDevices.entries.sortedByDescending { it.value.rssi }
             }
         }
+
+        val connected by SharedState.connected.collectAsStateWithLifecycle()
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -103,6 +105,21 @@ fun SettingsScreen(viewModel: MainViewModel) {
                 .padding(horizontal = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            item(key = "title_set_server") {
+                Row {
+                    Text("设置火灾报警服务器", color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.weight(1f))
+                    Text(if (connected)"已连接" else "未连接", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            item(key = "set_server") {
+                TextField(value = viewModel.serverUrl, onValueChange = {
+                    viewModel.serverUrl = it
+                    viewModel.saveServerUrl(it)
+                }, modifier = Modifier.fillMaxWidth(), label = { Text("服务器地址") })
+            }
+
             item(key = "title_added_beacons") {
                 Text("已添加的蓝牙信标", color = MaterialTheme.colorScheme.primary)
             }
