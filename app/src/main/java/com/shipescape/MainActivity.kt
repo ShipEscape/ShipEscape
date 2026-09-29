@@ -148,7 +148,8 @@ fun ShipEscapeApp() {
         AnimatedContent(
             currentDestination, transitionSpec = {
                 val duration = 150
-                val slideSpec = tween<IntOffset>(durationMillis = duration, easing = FastOutSlowInEasing)
+                val slideSpec =
+                    tween<IntOffset>(durationMillis = duration, easing = FastOutSlowInEasing)
                 if (targetState.ordinal > initialState.ordinal) {
                     (slideInHorizontally(slideSpec) { width -> width }).togetherWith(
                         slideOutHorizontally(slideSpec) { width -> -width })

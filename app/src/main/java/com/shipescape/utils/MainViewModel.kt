@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.collections.emptyMap
@@ -97,6 +98,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteBeaconTxPowerKey(key: String) {
         viewModelScope.launch {
             beaconTxPowerStore.updateData { it - key }
+        }
+    }
+
+
+    // 服务器 URL
+    private val serverUrlStore = application.serverUrlStore
+    var serverUrl by mutableStateOf("")
+    init {
+        viewModelScope.launch {
+            serverUrl = serverUrlStore.data.first()
+        }
+    }
+    fun saveServerUrl(url: String) {
+        viewModelScope.launch {
+            serverUrlStore.updateData { url }
         }
     }
 }

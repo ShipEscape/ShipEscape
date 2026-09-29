@@ -35,8 +35,24 @@ object MapDoubleSerializer : Serializer<Map<String, Double>> {
         }
 }
 
+object ServerUrlSerializer: Serializer<String>{
+    override val defaultValue = ""
+
+    override suspend fun readFrom(input: InputStream): String =
+        runCatching {
+            val text = input.readBytes().decodeToString()
+            text.ifBlank { defaultValue }
+        }.getOrDefault(defaultValue)
+
+    override suspend fun writeTo(t: String, output: OutputStream) =
+        withContext(Dispatchers.IO) {
+            output.write(t.toByteArray())
+        }
+}
+
 val Context.beaconStore: DataStore<Map<String, String>> by dataStore("beacons.json", MapSerializer)
 val Context.beaconPositionStore: DataStore<Map<String, String>> by dataStore("beaconPositions.json", MapSerializer)
 val Context.exitPositionStore: DataStore<Map<String, String>> by dataStore("exits.json", MapSerializer)
 val Context.beaconTxPowerStore: DataStore<Map<String, Double>> by dataStore("beaconTxPowers.json",
     MapDoubleSerializer)
+val Context.serverUrlStore: DataStore<String> by dataStore("serverUrl.txt", ServerUrlSerializer)

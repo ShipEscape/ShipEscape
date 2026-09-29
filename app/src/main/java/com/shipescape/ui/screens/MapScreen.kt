@@ -72,8 +72,11 @@ fun MapScreen(viewModel: MainViewModel) {
     val exitPositionMap by viewModel.exitPositionMapState.collectAsStateWithLifecycle()
     val beaconTxPowerMap by viewModel.beaconTxPowerMapState.collectAsStateWithLifecycle()
 
+    val alert by SharedState.alert.collectAsStateWithLifecycle()
+
     var path by remember { mutableStateOf(intArrayOf()) }
     val graph: NavGraph = remember { loadMask(context, "ship_floor_plan.bin") }
+
     // 用蓝牙信标信号强度推算当前坐标
     val currentPos by remember {
         derivedStateOf {
@@ -105,6 +108,26 @@ fun MapScreen(viewModel: MainViewModel) {
         }
     }
 
+    /**
+     * 规划逃生路线
+     */
+    fun planEscapeRoute() {
+        val start = graph.indexOf(
+            currentPos?.x?.roundToInt() ?: 0, currentPos?.y?.roundToInt() ?: 0
+        )
+        // TODO: 当前为一个出口，后续需支持多个出口
+        val (x, y) = parseCoordinates(exitPositionMap.values.firstOrNull() ?: "0,0")
+            ?: Offset(0f, 0f)
+        val goal = graph.indexOf(x.roundToInt(), y.roundToInt())
+        path = AStar.findPath(graph, start, goal)
+    }
+
+    LaunchedEffect(alert) {
+        if (alert) {
+            planEscapeRoute()
+        }
+    }
+
     Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainer, topBar = {
         LargeFlexibleTopAppBar(
             title = { Text(stringResource(R.string.app_name)) },
@@ -116,15 +139,7 @@ fun MapScreen(viewModel: MainViewModel) {
     }, floatingActionButton = {
         FloatingActionButton(
             onClick = {
-                // 规划逃生路线
-                val start = graph.indexOf(
-                    currentPos?.x?.roundToInt() ?: 0, currentPos?.y?.roundToInt() ?: 0
-                )
-                // TODO: 当前为一个出口，后续需支持多个出口
-                val (x, y) = parseCoordinates(exitPositionMap.values.firstOrNull() ?: "0,0")
-                    ?: Offset(0f, 0f)
-                val goal = graph.indexOf(x.roundToInt(), y.roundToInt())
-                path = AStar.findPath(graph, start, goal)
+                planEscapeRoute()
             }) { Icon(Default.Navigation, null, Modifier.rotate(45f)) }
     }) { innerPadding ->
         var scale by remember { mutableFloatStateOf(1f) }

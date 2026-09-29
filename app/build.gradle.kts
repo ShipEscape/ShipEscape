@@ -147,4 +147,5 @@ implementation(libs.androidx.core.ktx)
 
     implementation("androidx.datastore:datastore:1.2.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("com.squareup.okhttp3:okhttp:5.5.0")
 }
