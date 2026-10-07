@@ -21,7 +21,7 @@ public final class AStar {
     }
 
 
-    public static int[] findPath(NavGraph graph, int startIdx, int goalIdx) {
+    public static PathResult findPath(NavGraph graph, int startIdx, int goalIdx) {
         if (graph == null) {
             throw new IllegalArgumentException("graph 不能为 null");
         }
@@ -31,20 +31,20 @@ public final class AStar {
         //越界。必须同时检查上界：只查 < 0 会让 idx == cellCount() 漏过去，
         //最终在 gScore[cellCount()] 处抛 ArrayIndexOutOfBoundsException。
         final int n = graph.cellCount();
-        if (startIdx < 0 || startIdx >= n || goalIdx < 0 || goalIdx >= n) return EMPTY_PATH;
+        if (startIdx < 0 || startIdx >= n || goalIdx < 0 || goalIdx >= n) return new PathResult(EMPTY_PATH, Float.POSITIVE_INFINITY);
 
         //不可通行。必须在「起点等于终点」之前判断，否则终点是墙时
         //会返回一个长度为 1 的「路径」，让调用方误以为找到了出口。
-        if (!graph.isWalkableAt(startIdx) || !graph.isWalkableAt(goalIdx)) return EMPTY_PATH;
+        if (!graph.isWalkableAt(startIdx) || !graph.isWalkableAt(goalIdx)) return new PathResult(EMPTY_PATH, Float.POSITIVE_INFINITY);
 
         // 3) 起点即终点。
-        if (startIdx == goalIdx) return new int[]{startIdx};
+        if (startIdx == goalIdx) return new PathResult(new int[]{startIdx}, 0.0f);
 
         return search(graph, startIdx, goalIdx);
     }
 
 
-    private static int[] search(NavGraph graph, int startIdx, int goalIdx) {
+    private static PathResult search(NavGraph graph, int startIdx, int goalIdx) {
         final int n = graph.cellCount();
 
         final float[] gScore = new float[n];
@@ -72,7 +72,7 @@ public final class AStar {
 
 
             if (closed[cur]) continue;
-            if (cur == goalIdx) return reconstruct(cameFrom, goalIdx);
+            if (cur == goalIdx) return new PathResult(reconstruct(cameFrom, goalIdx), gScore[goalIdx]);
             closed[cur] = true;
 
             final float gCur = gScore[cur];
@@ -95,7 +95,7 @@ public final class AStar {
             }
         }
 
-        return EMPTY_PATH;   // 开集空了仍未抵达终点 → 不连通
+        return new PathResult(EMPTY_PATH, Float.POSITIVE_INFINITY);   // 开集空了仍未抵达终点 → 不连通
     }
 
     /*
