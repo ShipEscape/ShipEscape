@@ -57,6 +57,7 @@ import com.shipescape.utils.maxTimeMillis
 import com.shipescape.utils.parseCoordinates
 import com.shipescape.utils.pathfinding.AStar
 import com.shipescape.utils.pathfinding.NavGraph
+import com.shipescape.utils.pathfinding.PathResult
 import com.shipescape.utils.pathfinding.loadMask
 import com.shipescape.utils.rssi2Distance
 import kotlin.math.roundToInt
@@ -115,11 +116,16 @@ fun MapScreen(viewModel: MainViewModel) {
         val start = graph.indexOf(
             currentPos?.x?.roundToInt() ?: 0, currentPos?.y?.roundToInt() ?: 0
         )
-        // TODO: 当前为一个出口，后续需支持多个出口
-        val (x, y) = parseCoordinates(exitPositionMap.values.firstOrNull() ?: "0,0")
-            ?: Offset(0f, 0f)
-        val goal = graph.indexOf(x.roundToInt(), y.roundToInt())
-        path = AStar.findPath(graph, start, goal)
+        var minCostPathResult= PathResult(intArrayOf(), Float.MAX_VALUE)
+        for (exit in exitPositionMap.values) {
+            val (x, y) = parseCoordinates(exit) ?: continue
+            val goal = graph.indexOf(x.roundToInt(), y.roundToInt())
+            val pathResult = AStar.findPath(graph, start, goal)
+            if (pathResult.cost < minCostPathResult.cost) {
+                minCostPathResult = pathResult
+            }
+        }
+        path=minCostPathResult.path
     }
 
     LaunchedEffect(alert) {
