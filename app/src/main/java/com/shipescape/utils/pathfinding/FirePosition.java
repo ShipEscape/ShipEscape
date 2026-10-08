@@ -57,7 +57,7 @@ public class FirePosition {
     /**
      * 实现效果：修改原graph中的cost数组，使其符合火灾通行情况
      * @param graph 传入的原图
-     * @param intensity 火灾的烈度 代表火灾影响距离为 intensity*BASE_RADIUS_CELLS
+     * @param intensity 火灾的烈度 代表火灾影响距离为 sqrt(intensity)*BASE_RADIUS_CELLS
      */
     public void applyTo(NavGraph graph, int intensity) {
         if (graph == null) {
