@@ -15,7 +15,7 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 1
-        versionName = "0.3.1"
+        versionName = "0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         androidResources.localeFilters += listOf("zh")
@@ -53,11 +53,6 @@ android {
                 ndk { abiFilters.add("x86_64") }
                 this.signingConfig = signingConfig
             }
-            create("arm") {
-                dimension = "abi"
-                ndk { abiFilters.add("armeabi-v7a") }
-                this.signingConfig = signingConfig
-            }
             create("arm64Minsdk35") {
                 dimension = "abi"
                 ndk { abiFilters.add("arm64-v8a") }
@@ -68,6 +63,11 @@ android {
                 dimension = "abi"
                 ndk { abiFilters.add("arm64-v8a") }
                 minSdk = 29
+                this.signingConfig = signingConfig
+            }
+            create("arm") {
+                dimension = "abi"
+                ndk { abiFilters.add("armeabi-v7a") }
                 this.signingConfig = signingConfig
             }
             create("universal") {

@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -13,9 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons.Default
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material3.Badge
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,19 +55,25 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import com.shipescape.R
 import com.shipescape.utils.MainViewModel
 import com.shipescape.utils.SharedState
 import com.shipescape.utils.maxTimeMillis
 import com.shipescape.utils.parseCoordinates
 import com.shipescape.utils.pathfinding.AStar
+import com.shipescape.utils.pathfinding.FirePosition
 import com.shipescape.utils.pathfinding.NavGraph
 import com.shipescape.utils.pathfinding.PathResult
 import com.shipescape.utils.pathfinding.loadMask
 import com.shipescape.utils.rssi2Distance
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MapScreen(viewModel: MainViewModel) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -74,9 +85,13 @@ fun MapScreen(viewModel: MainViewModel) {
     val beaconTxPowerMap by viewModel.beaconTxPowerMapState.collectAsStateWithLifecycle()
 
     val alert by SharedState.alert.collectAsStateWithLifecycle()
+    val fireCenterX by SharedState.fireCenterX.collectAsStateWithLifecycle()
+    val fireCenterY by SharedState.fireCenterY.collectAsStateWithLifecycle()
+    val fireIntensity by SharedState.fireIntensity.collectAsStateWithLifecycle()
 
     var path by remember { mutableStateOf(intArrayOf()) }
     val graph: NavGraph = remember { loadMask(context, "ship_floor_plan.bin") }
+    var findingPath by remember { mutableStateOf(false) }
 
     // 用蓝牙信标信号强度推算当前坐标
     val currentPos by remember {
@@ -113,19 +128,24 @@ fun MapScreen(viewModel: MainViewModel) {
      * 规划逃生路线
      */
     fun planEscapeRoute() {
-        val start = graph.indexOf(
-            currentPos?.x?.roundToInt() ?: 0, currentPos?.y?.roundToInt() ?: 0
-        )
-        var minCostPathResult= PathResult(intArrayOf(), Float.MAX_VALUE)
-        for (exit in exitPositionMap.values) {
-            val (x, y) = parseCoordinates(exit) ?: continue
-            val goal = graph.indexOf(x.roundToInt(), y.roundToInt())
-            val pathResult = AStar.findPath(graph, start, goal)
-            if (pathResult.cost < minCostPathResult.cost) {
-                minCostPathResult = pathResult
+        viewModel.viewModelScope.launch(Dispatchers.Default) {
+            findingPath = true
+            val start = graph.indexOf(
+                currentPos?.x?.roundToInt() ?: 0, currentPos?.y?.roundToInt() ?: 0
+            )
+            FirePosition(fireCenterX, fireCenterY).applyTo(graph, fireIntensity)
+            var minCostPathResult = PathResult(intArrayOf(), Float.MAX_VALUE)
+            for (exit in exitPositionMap.values) {
+                val (x, y) = parseCoordinates(exit) ?: continue
+                val goal = graph.indexOf(x.roundToInt(), y.roundToInt())
+                val pathResult = AStar.findPath(graph, start, goal)
+                if (pathResult.cost < minCostPathResult.cost) {
+                    minCostPathResult = pathResult
+                }
             }
+            path = minCostPathResult.path
+            findingPath = false
         }
-        path=minCostPathResult.path
     }
 
     LaunchedEffect(alert) {
@@ -136,7 +156,20 @@ fun MapScreen(viewModel: MainViewModel) {
 
     Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainer, topBar = {
         LargeFlexibleTopAppBar(
-            title = { Text(stringResource(R.string.app_name)) },
+            title = {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(stringResource(R.string.app_name))
+                    if (findingPath) {
+                        Spacer(Modifier.size(8.dp))
+                        Badge(containerColor = MaterialTheme.colorScheme.primaryContainer) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                LoadingIndicator(Modifier.size(16.dp))
+                                Text("路线规划中...")
+                            }
+                        }
+                    }
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
@@ -193,9 +226,6 @@ fun MapScreen(viewModel: MainViewModel) {
                     minOf(mapContainerSize.width / imgWidth, mapContainerSize.height / imgHeight)
                 val mapImageLeft = (mapContainerSize.width - imgWidth * fitScale) / 2f
                 val mapImageTop = (mapContainerSize.height - imgHeight * fitScale) / 2f
-                // 未缩放时的坐标
-                val originalX = mapImageLeft + (currentPos?.x?.toDouble() ?: 0.0) * fitScale
-                val originalY = mapImageTop + (currentPos?.y?.toDouble() ?: 0.0) * fitScale
 
                 val sizeDp = 24.dp
                 val radiusPx = with(LocalDensity.current) { (sizeDp / 2).toPx() }
@@ -211,18 +241,19 @@ fun MapScreen(viewModel: MainViewModel) {
                         val screenX = originalX * scale + offset.x
                         val screenY = originalY * scale + offset.y
 
-                        Box(modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = (screenX - radiusPx).roundToInt(),
-                                    y = (screenY - radiusPx).roundToInt()
-                                )
-                            }
-                            .size(sizeDp)
-                            .background(MaterialTheme.colorScheme.background, CircleShape)
-                            .border(
-                                width = 2.dp, color = Color.Gray, shape = CircleShape
-                            ), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        x = (screenX - radiusPx).roundToInt(),
+                                        y = (screenY - radiusPx).roundToInt()
+                                    )
+                                }
+                                .size(sizeDp)
+                                .background(MaterialTheme.colorScheme.background, CircleShape)
+                                .border(
+                                    width = 2.dp, color = Color.Gray, shape = CircleShape
+                                ), contentAlignment = Alignment.Center) {
                             Text(
                                 text = (beaconMap[key] ?: key).take(2),
                                 fontSize = 10.sp,
@@ -243,20 +274,21 @@ fun MapScreen(viewModel: MainViewModel) {
                         val screenX = originalX * scale + offset.x
                         val screenY = originalY * scale + offset.y
 
-                        Box(modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = (screenX - radiusPx).roundToInt(),
-                                    y = (screenY - radiusPx).roundToInt()
-                                )
-                            }
-                            .size(sizeDp)
-                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
-                            .border(
-                                width = 2.dp,
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = CircleShape
-                            ), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        x = (screenX - radiusPx).roundToInt(),
+                                        y = (screenY - radiusPx).roundToInt()
+                                    )
+                                }
+                                .size(sizeDp)
+                                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
+                                .border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                ), contentAlignment = Alignment.Center) {
                             Text(
                                 text = (key).take(2),
                                 fontSize = 10.sp,
@@ -267,19 +299,49 @@ fun MapScreen(viewModel: MainViewModel) {
                 }
 
 
+                // 火焰范围
+                if (alert) {
+                    val originalRadiusPx = FirePosition.BASE_RADIUS_CELLS * sqrt(fireIntensity)*fitScale
+                    val currentRadiusPx = originalRadiusPx * scale
+                    val currentDiameterDp =
+                        with(LocalDensity.current) { (currentRadiusPx * 2).toDp() }
+                    // 未缩放时的坐标
+                    val originalFireCenterX = mapImageLeft + fireCenterX * fitScale
+                    val originalFireCenterY = mapImageTop + fireCenterY * fitScale
+                    Box(
+                        modifier = Modifier
+                            .offset {
+                                IntOffset(
+                                    x = (originalFireCenterX * scale + offset.x - currentRadiusPx).roundToInt(),
+                                    y = (originalFireCenterY * scale + offset.y - currentRadiusPx).roundToInt()
+                                )
+                            }
+                            .size(currentDiameterDp)
+                            .background(
+                                color = Color.Red.copy(alpha = 0.2f),
+                                shape = CircleShape
+                            )
+                    )
+                }
+
+
                 // 当前坐标圆点
-                Box(modifier = Modifier
-                    .offset {
-                        IntOffset(
-                            x = (originalX * scale + offset.x - radiusPx).roundToInt(),
-                            y = (originalY * scale + offset.y - radiusPx).roundToInt()
-                        )
-                    }
-                    .size(sizeDp)
-                    .background(MaterialTheme.colorScheme.background, CircleShape)
-                    .border(
-                        5.dp, MaterialTheme.colorScheme.primary, CircleShape
-                    ))
+                // 未缩放时的坐标
+                val originalCurrentPosX = mapImageLeft + (currentPos?.x?.toDouble() ?: 0.0) * fitScale
+                val originalCurrentPosY = mapImageTop + (currentPos?.y?.toDouble() ?: 0.0) * fitScale
+                Box(
+                    modifier = Modifier
+                        .offset {
+                            IntOffset(
+                                x = (originalCurrentPosX * scale + offset.x - radiusPx).roundToInt(),
+                                y = (originalCurrentPosY * scale + offset.y - radiusPx).roundToInt()
+                            )
+                        }
+                        .size(sizeDp)
+                        .background(MaterialTheme.colorScheme.background, CircleShape)
+                        .border(
+                            5.dp, MaterialTheme.colorScheme.primary, CircleShape
+                        ))
             }
 
             // 逃生路线
