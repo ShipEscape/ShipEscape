@@ -10,7 +10,9 @@ data class BluetoothDevice(
     val lastRefreshMillis: Long = 0
 )
 
-
+/**
+ * 服务与 Activity 间传输数据
+ */
 object SharedState {
     val bluetoothDevices = mutableStateMapOf<String, BluetoothDevice>()
     val _errorMsg = MutableStateFlow("")
@@ -19,4 +21,10 @@ object SharedState {
     val alert = _alert.asStateFlow()
     val _connected = MutableStateFlow(false)
     val connected = _connected.asStateFlow()
+    val _fireCenterX = MutableStateFlow(-1)
+    val fireCenterX = _fireCenterX.asStateFlow()
+    val _fireCenterY = MutableStateFlow(-1)
+    val fireCenterY = _fireCenterY.asStateFlow()
+    val _fireIntensity = MutableStateFlow(1f)
+    val fireIntensity = _fireIntensity.asStateFlow()
 }

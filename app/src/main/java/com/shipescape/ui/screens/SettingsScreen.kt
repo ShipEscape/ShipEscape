@@ -109,7 +109,10 @@ fun SettingsScreen(viewModel: MainViewModel) {
                 Row {
                     Text("设置火灾报警服务器", color = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.weight(1f))
-                    Text(if (connected)"已连接" else "未连接", color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        if (connected) "已连接" else "未连接",
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 

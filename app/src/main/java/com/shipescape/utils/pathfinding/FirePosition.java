@@ -3,7 +3,7 @@ package com.shipescape.utils.pathfinding;
 import java.util.Arrays;
 
 //使用手写二叉堆的方式实现优先队列，而不是PriorityQueue<Entry>，防止占用内存过大
-//调用方法    public void applyTo(NavGraph graph, int intensity)
+//调用方法    public void applyTo(NavGraph graph, float intensity)
 //实现效果：修改原graph中的cost数组，使其符合火灾通行情况
 //需调参数：BASE_RADIUS_CELLS、PEAK_EXTRA_COST，后续根据实际情况进行调整
 
@@ -14,7 +14,7 @@ public class FirePosition {
      */
 
 
-    private static final float BASE_RADIUS_CELLS = 120f;
+    public static final float BASE_RADIUS_CELLS = 120f;
     /**
      火灾中心处的代价
      */
@@ -59,7 +59,7 @@ public class FirePosition {
      * @param graph 传入的原图
      * @param intensity 火灾的烈度 代表火灾影响距离为 sqrt(intensity)*BASE_RADIUS_CELLS
      */
-    public void applyTo(NavGraph graph, int intensity) {
+    public void applyTo(NavGraph graph, float intensity) {
         if (graph == null) {
             throw new IllegalArgumentException("graph 不能为 null");
         }

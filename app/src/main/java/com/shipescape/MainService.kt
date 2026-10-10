@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothManager
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.shipescape.utils.BeaconScanner
 import com.shipescape.utils.SharedState
@@ -17,12 +18,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import org.json.JSONObject
+import kotlin.time.Duration.Companion.milliseconds
 
 // 获取坐标、连接服务器
 class MainService : Service() {
@@ -35,6 +39,7 @@ class MainService : Service() {
             serverUrlStore.data
                 .distinctUntilChanged()
                 .collect { url ->
+                    Log.d("MainService", "serverUrlStore changed: $url")
                     reconnectWebSocket(url)
                 }
         }
@@ -77,9 +82,9 @@ class MainService : Service() {
 
 
     private fun reconnectWebSocket(url: String) {
-        webSocket?.close(1000, "已重新设置 URL")
-        webSocket = null
         try {
+            webSocket?.close(1000, "已重新设置 URL")
+            webSocket = null
             val request = Request.Builder().url(url).build()
             webSocket = client.newWebSocket(
                 request,
@@ -88,9 +93,22 @@ class MainService : Service() {
                         SharedState._connected.value = true
                     }
 
+                    /**
+                     *接收服务端报警信息
+                     */
                     override fun onMessage(webSocket: WebSocket, text: String) {
-                        val value = text.toBoolean()
-                        SharedState._alert.value = value
+                        try {
+                            val json = JSONObject(text)
+                            Log.d("MainService", json.toString())
+                            SharedState._alert.value = json.optBoolean("alert", false)
+                            SharedState._fireCenterX.value =
+                                json.optInt("fireCenterX", -1)
+                            SharedState._fireCenterY.value =
+                                json.optInt("fireCenterY", -1)
+                            SharedState._fireIntensity.value =
+                                json.optDouble("fireIntensity", 1.0).toFloat()
+                        } catch (_: Exception) {
+                        }
                     }
 
                     override fun onFailure(
@@ -100,6 +118,23 @@ class MainService : Service() {
                     ) {
                         SharedState._errorMsg.value = "连接失败: ${t.message}"
                         SharedState._connected.value = false
+                        serviceScope.launch {
+                            delay(1000.milliseconds)
+                            reconnectWebSocket(url)
+                        }
+                    }
+
+
+                    override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                        SharedState._errorMsg.value = "连接关闭: $reason"
+                        webSocket.close(1000, null)
+                        serviceScope.launch {
+                            delay(1000.milliseconds)
+                            if (webSocket === this@MainService.webSocket) {
+                                SharedState._connected.value = false
+                            }
+                            reconnectWebSocket(url)
+                        }
                     }
                 }
             )
