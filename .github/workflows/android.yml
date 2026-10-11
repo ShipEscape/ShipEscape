@@ -15,7 +15,6 @@ jobs:
           - { flavor: "arm", task: "assembleArmRelease" }
           - { flavor: "arm64Minsdk35", task: "assembleArm64Minsdk35Release" }
           - { flavor: "arm64Minsdk29", task: "assembleArm64Minsdk29Release" }
-          - { flavor: "arm64Minsdk26", task: "assembleArm64Minsdk26Release" }
           - { flavor: "universal", task: "assembleUniversalRelease" }
 
     steps:
@@ -78,19 +77,24 @@ jobs:
 
       - name: 从 build.gradle.kts 提取版本信息
         id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION_NAME=$(grep -oP 'versionName\s*=\s*\"\K[^"]+' app/build.gradle.kts | head -1)
           VERSION_CODE=$(grep -oP 'versionCode\s*=\s*"?\K[0-9]+' app/build.gradle.kts | head -1)
-          
-          echo "Extracted versionName: $VERSION_NAME"
-          echo "Extracted versionCode: $VERSION_CODE"
-          
-          TAG_NAME="${VERSION_CODE}-${VERSION_NAME}"
-          echo "Normalized Tag: $TAG_NAME"
-          
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+          BASE_TAG="${VERSION_CODE}-${VERSION_NAME}"
+          TAG_NAME="$BASE_TAG"
+          SUFFIX=1
+
+          while gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; do
+            TAG_NAME="${BASE_TAG}-${SUFFIX}"
+            SUFFIX=$((SUFFIX + 1))
+          done
+
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v2
@@ -98,6 +102,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.version.outputs.tag_name }}
-          name: ${{ steps.version.outputs.version_name }}
+          name: ${{ steps.version.outputs.tag_name }}
           body: ${{ github.event.head_commit.message }}
           files: apks/*.apk
