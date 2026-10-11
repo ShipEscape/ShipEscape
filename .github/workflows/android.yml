@@ -83,7 +83,7 @@ jobs:
           VERSION_NAME=$(grep -oP 'versionName\s*=\s*\"\K[^"]+' app/build.gradle.kts | head -1)
           VERSION_CODE=$(grep -oP 'versionCode\s*=\s*"?\K[0-9]+' app/build.gradle.kts | head -1)
 
-          BASE_TAG="${VERSION_CODE}-${VERSION_NAME}"
+          BASE_TAG="${VERSION_NAME}-${VERSION_CODE}"
           TAG_NAME="$BASE_TAG"
           SUFFIX=1
 
