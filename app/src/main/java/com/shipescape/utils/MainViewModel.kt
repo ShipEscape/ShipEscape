@@ -3,9 +3,12 @@ package com.shipescape.utils
 import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shipescape.utils.pathfinding.NavGraph
+import com.shipescape.utils.pathfinding.loadMask
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -17,6 +20,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var nameToSave by mutableStateOf("")
     var txPowerToSave by mutableStateOf("-59")
     var beaconDialogExpanded by mutableStateOf(false)
+    var path by mutableStateOf(intArrayOf())
     private val beaconStore = application.beaconStore
 
     // 信标

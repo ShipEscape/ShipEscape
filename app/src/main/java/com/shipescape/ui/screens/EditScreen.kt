@@ -2,6 +2,10 @@ package com.shipescape.ui.screens
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -123,24 +127,42 @@ fun EditScreen(viewModel: MainViewModel) {
                     FabItem(
                         "出口",
                         Icons.AutoMirrored.Filled.ExitToApp,
-                        MaterialTheme.colorScheme.surfaceContainer
+                        MaterialTheme.colorScheme.surfaceContainerLow
                     ) {
                         exitDialogExpanded = true
                     }
                     Spacer(Modifier.size(16.dp))
                     FabItem(
-                        "信标", Default.Navigation, MaterialTheme.colorScheme.surfaceContainer
+                        "信标", Default.Navigation, MaterialTheme.colorScheme.surfaceContainerLow
                     ) {
                         beaconDialogExpanded = true
                     }
                     Spacer(Modifier.size(16.dp))
                 }
             }
+
+
+            val rotation by animateFloatAsState(
+                targetValue = if (fabExpanded) 45f else 0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+            )
+            val cornerRadius by animateDpAsState(
+                targetValue = if (fabExpanded) 28.dp else 20.dp,
+            )
             FloatingActionButton(
                 onClick = { fabExpanded = !fabExpanded },
                 modifier = Modifier,
-                shape = if (fabExpanded) CircleShape else RoundedCornerShape(20.dp)
-            ) { Icon(Default.Add, null) }
+                shape = RoundedCornerShape(cornerRadius)
+            ) {
+                Icon(Icons.Default.Add,null,
+                    modifier = Modifier.graphicsLayer {
+                        rotationZ = rotation
+                    }
+                )
+            }
         }
     }) { innerPadding ->
         LaunchedEffect(scale) { // 随着放大收起 LargeFlexibleTopAppBar
@@ -326,12 +348,12 @@ fun EditScreen(viewModel: MainViewModel) {
             AlertDialog({ beaconDialogExpanded = false }, title = { Text("放置信标") }, text = {
                 Column(
                     Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     beaconMap.forEach { i ->
                         ConfigItem(
                             i.value,
-                            background = if (i.key in beaconPositionMap.keys) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.background,
+                            background = if (i.key in beaconPositionMap.keys) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
                             onClick = {
                                 beaconDialogExpanded = false
                                 if (i.key !in beaconPositionMap.keys) {
@@ -378,13 +400,13 @@ fun EditScreen(viewModel: MainViewModel) {
             AlertDialog({ exitDialogExpanded = false }, title = { Text("放置出口") }, text = {
                 Column(
                     Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     exitPositionMap.forEach { i ->
                         val isPlaced = parseCoordinates(i.value) != null
                         ConfigItem(
                             i.key,
-                            background = if (isPlaced) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.background,
+                            background = if (isPlaced) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
                             onClick = {
                                 exitDialogExpanded = false
                                 if (!isPlaced) {
@@ -419,7 +441,7 @@ fun EditScreen(viewModel: MainViewModel) {
                                 } else viewModel.deleteExitPositionKey(i.key)
                             })
                     }
-                    ConfigItem("添加...") {
+                    ConfigItem("添加...", background = MaterialTheme.colorScheme.surfaceContainerHighest) {
                         addExitDialogExpanded = true
                     }
                 }

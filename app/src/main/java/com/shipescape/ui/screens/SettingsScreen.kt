@@ -181,11 +181,12 @@ fun SettingsScreen(viewModel: MainViewModel) {
     if (exportDialogExpanded) {
         AlertDialog({ exportDialogExpanded = false }, title = { Text("配置管理") }, text = {
             Column {
-                ConfigItem("导出", "导出当前配置", Icons.Default.Download) {
+                ConfigItem("导出", "导出当前配置", Icons.Default.Upload) {
                     exportLauncher.launch("ShipEscape_" + System.currentTimeMillis() + ".zip")
                     exportDialogExpanded = false
                 }
-                ConfigItem("导入", "导入配置并覆盖当前配置", Icons.Default.Upload) {
+                Spacer(Modifier.height(8.dp))
+                ConfigItem("导入", "导入配置并覆盖当前配置", Icons.Default.Download) {
                     importLauncher.launch(
                         arrayOf(
                             "application/zip", "application/x-zip-compressed", "*/*"
@@ -258,7 +259,7 @@ fun BluetoothDeviceRow(
     Row(
         Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
             .padding(12.dp, 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -286,7 +287,7 @@ fun BluetoothDeviceRow(
                 )
                 viewModel.beaconDialogExpanded = true
             }, colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
             if (addr in beaconMap.keys) Icon(Icons.Default.Edit, null)
@@ -312,8 +313,8 @@ fun ConfigItem(
         verticalAlignment = Alignment.CenterVertically) {
         if (icon != null) {
             Icon(icon, null, Modifier.size(36.dp))
+            Spacer(Modifier.size(12.dp))
         }
-        Spacer(Modifier.size(12.dp))
         Column {
             Text(title, fontWeight = FontWeight.Bold)
             if (desc != null) {
@@ -323,5 +324,4 @@ fun ConfigItem(
             }
         }
     }
-    Spacer(Modifier.height(8.dp))
 }
