@@ -39,7 +39,6 @@ class MainService : Service() {
             serverUrlStore.data
                 .distinctUntilChanged()
                 .collect { url ->
-                    Log.d("MainService", "serverUrlStore changed: $url")
                     reconnectWebSocket(url)
                 }
         }

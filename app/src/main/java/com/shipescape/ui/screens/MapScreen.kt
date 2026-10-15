@@ -38,6 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -59,6 +61,7 @@ import androidx.lifecycle.viewModelScope
 import com.shipescape.R
 import com.shipescape.utils.MainViewModel
 import com.shipescape.utils.SharedState
+import com.shipescape.utils.generateCostBitmap
 import com.shipescape.utils.maxTimeMillis
 import com.shipescape.utils.parseCoordinates
 import com.shipescape.utils.pathfinding.AStar
@@ -69,6 +72,7 @@ import com.shipescape.utils.pathfinding.loadMask
 import com.shipescape.utils.rssi2Distance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -90,6 +94,7 @@ fun MapScreen(viewModel: MainViewModel) {
     val fireIntensity by SharedState.fireIntensity.collectAsStateWithLifecycle()
 
     val graph: NavGraph = remember { loadMask(context, "ship_floor_plan.bin") }
+    var costOverlayBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     var findingPath by remember { mutableStateOf(false) }
 
     // 用蓝牙信标信号强度推算当前坐标
@@ -129,15 +134,17 @@ fun MapScreen(viewModel: MainViewModel) {
     fun planEscapeRoute() {
         viewModel.viewModelScope.launch(Dispatchers.Default) {
             findingPath = true
-            val start = graph.indexOf(
+            val newGraph = graph.copy()
+            val start = newGraph.indexOf(
                 currentPos?.x?.roundToInt() ?: 0, currentPos?.y?.roundToInt() ?: 0
             )
-            FirePosition(fireCenterX, fireCenterY).applyTo(graph, fireIntensity)
+            FirePosition(fireCenterX, fireCenterY).applyTo(newGraph, fireIntensity)
+            costOverlayBitmap = generateCostBitmap(newGraph)
             var minCostPathResult = PathResult(intArrayOf(), Float.MAX_VALUE)
             for (exit in exitPositionMap.values) {
                 val (x, y) = parseCoordinates(exit) ?: continue
-                val goal = graph.indexOf(x.roundToInt(), y.roundToInt())
-                val pathResult = AStar.findPath(graph, start, goal)
+                val goal = newGraph.indexOf(x.roundToInt(), y.roundToInt())
+                val pathResult = AStar.findPath(newGraph, start, goal)
                 if (pathResult.cost < minCostPathResult.cost) {
                     minCostPathResult = pathResult
                 }
@@ -231,28 +238,30 @@ fun MapScreen(viewModel: MainViewModel) {
 
 
                 // 火焰范围
-                if (alert) {
-                    val originalRadiusPx = FirePosition.BASE_RADIUS_CELLS * sqrt(fireIntensity)*fitScale
-                    val currentRadiusPx = originalRadiusPx * scale
-                    val currentDiameterDp =
-                        with(LocalDensity.current) { (currentRadiusPx * 2).toDp() }
-                    // 未缩放时的坐标
-                    val originalFireCenterX = mapImageLeft + fireCenterX * fitScale
-                    val originalFireCenterY = mapImageTop + fireCenterY * fitScale
-                    Box(
+                if (alert && costOverlayBitmap != null) {
+                    Canvas(
                         modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = (originalFireCenterX * scale + offset.x - currentRadiusPx).roundToInt(),
-                                    y = (originalFireCenterY * scale + offset.y - currentRadiusPx).roundToInt()
-                                )
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offset.x
+                                translationY = offset.y
+                                transformOrigin = TransformOrigin(0f, 0f)
                             }
-                            .size(currentDiameterDp)
-                            .background(
-                                color = Color.Red.copy(alpha = 0.2f),
-                                shape = CircleShape
+                    ) {
+                        costOverlayBitmap?.let { bmp ->
+                            drawImage(
+                                image = bmp,
+                                dstOffset = IntOffset(mapImageLeft.roundToInt(), mapImageTop.roundToInt()),
+                                dstSize = IntSize(
+                                    (imgWidth * fitScale).roundToInt(),
+                                    (imgHeight * fitScale).roundToInt()
+                                ),
+                                filterQuality = FilterQuality.Medium
                             )
-                    )
+                        }
+                    }
                 }
 
 
@@ -292,7 +301,10 @@ fun MapScreen(viewModel: MainViewModel) {
                 // 逃生路线
                 if (viewModel.path.isNotEmpty() && mapContainerSize.width > 0) {
                     val fitScale =
-                        minOf(mapContainerSize.width / imgWidth, mapContainerSize.height / imgHeight)
+                        minOf(
+                            mapContainerSize.width / imgWidth,
+                            mapContainerSize.height / imgHeight
+                        )
                     val left = (mapContainerSize.width - imgWidth * fitScale) / 2f
                     val top = (mapContainerSize.height - imgHeight * fitScale) / 2f
 
@@ -362,8 +374,10 @@ fun MapScreen(viewModel: MainViewModel) {
 
                 // 当前坐标圆点
                 // 未缩放时的坐标
-                val originalCurrentPosX = mapImageLeft + (currentPos?.x?.toDouble() ?: 0.0) * fitScale
-                val originalCurrentPosY = mapImageTop + (currentPos?.y?.toDouble() ?: 0.0) * fitScale
+                val originalCurrentPosX =
+                    mapImageLeft + (currentPos?.x?.toDouble() ?: 0.0) * fitScale
+                val originalCurrentPosY =
+                    mapImageTop + (currentPos?.y?.toDouble() ?: 0.0) * fitScale
                 Box(
                     modifier = Modifier
                         .offset {

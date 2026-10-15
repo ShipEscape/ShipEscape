@@ -66,6 +66,20 @@ public final class NavGraph {
         Arrays.fill(this.cost, 1.0f);
     }
 
+    /**
+     * 复制一个已有的 NavGraph
+     */
+    public NavGraph(NavGraph other) {
+        this.width = other.width;
+        this.height = other.height;
+        this.walkable = other.walkable.clone();
+        this.cost = other.cost.clone();
+    }
+
+    public NavGraph copy() {
+        return new NavGraph(this);
+    }
+
 
     //格子总数
     public int cellCount() {

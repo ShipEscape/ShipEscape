@@ -82,16 +82,13 @@ jobs:
         run: |
           VERSION_NAME=$(grep -oP 'versionName\s*=\s*\"\K[^"]+' app/build.gradle.kts | head -1)
           VERSION_CODE=$(grep -oP 'versionCode\s*=\s*"?\K[0-9]+' app/build.gradle.kts | head -1)
-
-          BASE_TAG="v${VERSION_NAME}-${VERSION_CODE}"
+          BASE_TAG="v${VERSION_NAME}"
           TAG_NAME="$BASE_TAG"
-          SUFFIX=1
-
+          SUFFIX=2
           while gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; do
             TAG_NAME="${BASE_TAG}-${SUFFIX}"
             SUFFIX=$((SUFFIX + 1))
           done
-
           echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
